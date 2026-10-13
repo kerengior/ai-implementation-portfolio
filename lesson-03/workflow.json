@@ -1,0 +1,221 @@
+{
+  "name": "שיעור 3 · פניות לגיליון",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2758a2e6-325d-4f98-86e1-b330d315c8bc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "נתונים לבדיקה",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "533e17d6-cfc8-4c7e-bfb6-cafcbea3941e",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b16f3e3b-4b30-4c2c-8b91-8945e61cafe6",
+              "name": "סטטוס",
+              "value": "נקלט",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        384,
+        0
+      ],
+      "id": "f26671cd-35f7-4826-acaa-bf09a1aab282",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 833369513,
+          "mode": "list",
+          "cachedResultName": "פלט שיעור 3",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=833369513"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "מס׳": "={{ $json['מס׳'] }}",
+            "פנייה": "={{ $json['פנייה'] }}",
+            "קטגוריה צפויה": "={{ $json['קטגוריה צפויה'] }}",
+            "דחיפות צפויה": "={{ $json['דחיפות צפויה'] }}",
+            "סטטוס": "={{ $json['סטטוס'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "מס׳",
+              "displayName": "מס׳",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "פנייה",
+              "displayName": "פנייה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "קטגוריה צפויה",
+              "displayName": "קטגוריה צפויה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "דחיפות צפויה",
+              "displayName": "דחיפות צפויה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "סטטוס",
+              "displayName": "סטטוס",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        608,
+        0
+      ],
+      "id": "d4fbc34b-958c-49c9-90a9-6d7b10dc7d0f",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c85cb6f8-30c3-43b5-b21b-0e67cfca9461",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "sAPaNoBnY5inoXc1",
+  "tags": []
+}

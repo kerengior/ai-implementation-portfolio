@@ -1,0 +1,167 @@
+{
+  "name": "שיעור 4 · חגים מ-API",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "14bd3615-b714-4398-a05c-1a603622ac56",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=off&mod=off&nx=off&mf=off&ss=off&c=off&s=off&i=on&year=2026&month=x&lg=he",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ad4d4a1f-e67b-409e-b3c9-2b06fdf69f7b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e2164085-b899-44b3-8cdb-6e6fc18e8a97",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1669831946,
+          "mode": "list",
+          "cachedResultName": "פלט שיעור 4",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=1669831946"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "תאריך": "={{ $json.date }}",
+            "יום טוב": "=  {{ $json.yomtov ? 'כן' : 'לא' }}",
+            "חג": "={{ $json.hebrew }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "תאריך",
+              "displayName": "תאריך",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "חג",
+              "displayName": "חג",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "יום טוב",
+              "displayName": "יום טוב",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        0
+      ],
+      "id": "a6a47126-c5d4-4ea9-b6ce-11a864c54eb3",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a475afcf-a36b-4890-9250-f6def6a74440",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "IKg8tYY05gPur0Tf",
+  "tags": []
+}

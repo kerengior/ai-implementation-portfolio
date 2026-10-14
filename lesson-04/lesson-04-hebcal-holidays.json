@@ -61,7 +61,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "תאריך": "={{ $json.date }}",
-            "יום טוב": "=  {{ $json.yomtov ? 'כן' : 'לא' }}",
+            "יום טוב": "={{ $json.yomtov ? 'כן' : 'לא' }}",
             "חג": "={{ $json.hebrew }}"
           },
           "matchingColumns": [],

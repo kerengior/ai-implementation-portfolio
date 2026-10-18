@@ -1,0 +1,293 @@
+{
+  "name": "שיעור 5 · סיווג דרך Gemini",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6198e2b8-7258-465b-8c43-cd9bfe6bb75a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "נתונים לבדיקה",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "fd437609-2388-4187-8f06-9841394f7e32",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"systemInstruction\": {\n    \"parts\": [\n      {\n        \"text\": \"לכל פנייה קבע קטגוריה אחת ודחיפות אחת.\\n\\nקטגוריות:\\nמשלוח: הזמנה שכבר בוצעה ולא הגיעה, איחור, שינוי כתובת.\\nהחזרה: בקשה להחזיר או להחליף מוצר תקין.\\nתשלום: כל מה שקשור לכסף: חיוב, זיכוי, החזר כספי, חשבונית.\\nתקלה במוצר: מוצר שהגיע פגום, שבור או לא עובד.\\nשאלה מקדימה: שאלה של מי שעוד לא הזמין, גם אם היא על משלוח.\\n\\nדחיפות:\\nגבוהה: חיוב כפול או שגוי, או מוצר שמסוכן לשימוש (חשמל, אש, חום).\\nנמוכה: שאלה מקדימה.\\nרגילה: כל השאר.\\n\\nהנימוק: משפט אחד, עד 10 מילים.\"\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": {{ JSON.stringify($json[\"פנייה\"]) }}\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\",\n    \"responseSchema\": {\n      \"type\": \"OBJECT\",\n      \"properties\": {\n        \"category\": {\n          \"type\": \"STRING\",\n          \"enum\": [\"משלוח\", \"החזרה\", \"תשלום\", \"תקלה במוצר\", \"שאלה מקדימה\"]\n        },\n        \"urgency\": {\n          \"type\": \"STRING\",\n          \"enum\": [\"גבוהה\", \"רגילה\", \"נמוכה\"]\n        },\n        \"reason\": {\n          \"type\": \"STRING\"\n        }\n      },\n      \"required\": [\"category\", \"urgency\", \"reason\"]\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "33bd3e58-79ed-4ad9-9adb-e29b40726e1e",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OAhMDy5BjWLJdCFN",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5120abcd-e32a-4ec5-89a1-7b90cefe3ccf",
+              "name": "מס׳",
+              "value": "= {{ $('Get row(s) in sheet').item.json['מס׳'] }}",
+              "type": "string"
+            },
+            {
+              "id": "c8dce8bb-4845-4592-90a9-c1999c6153f7",
+              "name": "קטגוריה",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).category }}",
+              "type": "string"
+            },
+            {
+              "id": "0af00e06-e276-4d9f-b844-09586114a4bc",
+              "name": "דחיפות",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).urgency }}",
+              "type": "string"
+            },
+            {
+              "id": "93e26b66-620e-4835-bfb0-a5708b58bd36",
+              "name": "נימוק",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).reason }}",
+              "type": "string"
+            },
+            {
+              "id": "21776680-2178-4eb2-bb0a-0c811845882b",
+              "name": "קטגוריה צפויה",
+              "value": "={{ $('Get row(s) in sheet').item.json['קטגוריה צפויה'] }}",
+              "type": "string"
+            },
+            {
+              "id": "6dd2875d-f6d2-4c55-b420-f9faa3b46840",
+              "name": "דחיפות צפויה",
+              "value": "={{ $('Get row(s) in sheet').item.json['דחיפות צפויה'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "d92b9c79-a153-40ec-ad65-08d0916834af",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1505,
+          "mode": "list",
+          "cachedResultName": "פלט שיעור 5",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=1505"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "מס׳": "={{ $json['מס׳'] }}",
+            "דחיפות צפויה": "={{ $json['דחיפות צפויה'] }}",
+            "קטגוריה": "={{ $json['קטגוריה'] }}",
+            "דחיפות": "={{ $json['דחיפות'] }}",
+            "נימוק": "={{ $json['נימוק'] }}",
+            "קטגוריה צפויה": "={{ $json['קטגוריה צפויה'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "מס׳",
+              "displayName": "מס׳",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "קטגוריה",
+              "displayName": "קטגוריה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "דחיפות",
+              "displayName": "דחיפות",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "נימוק",
+              "displayName": "נימוק",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "קטגוריה צפויה",
+              "displayName": "קטגוריה צפויה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "דחיפות צפויה",
+              "displayName": "דחיפות צפויה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        0
+      ],
+      "id": "fc9988f6-117b-4126-afce-1ada62612c3f",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "25c608d4-4a68-486d-9889-8c8ff1cacc67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "xQPy4TSlG4mpfZKy",
+  "tags": []
+}

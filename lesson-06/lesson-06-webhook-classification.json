@@ -1,0 +1,246 @@
+{
+  "name": "שיעור 6 · סיווג דרך Webhook.",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"systemInstruction\": {\n    \"parts\": [\n      {\n        \"text\": \"לכל פנייה קבע קטגוריה אחת ודחיפות אחת.\\n\\nקטגוריות:\\nמשלוח: הזמנה שכבר בוצעה ולא הגיעה, איחור, שינוי כתובת.\\nהחזרה: בקשה להחזיר או להחליף מוצר תקין.\\nתשלום: כל מה שקשור לכסף: חיוב, זיכוי, החזר כספי, חשבונית.\\nתקלה במוצר: מוצר שהגיע פגום, שבור או לא עובד.\\nשאלה מקדימה: שאלה של מי שעוד לא הזמין, גם אם היא על משלוח.\\n\\nדחיפות:\\nגבוהה: חיוב כפול או שגוי, או מוצר שמסוכן לשימוש (חשמל, אש, חום).\\nנמוכה: שאלה מקדימה.\\nרגילה: כל השאר.\\n\\nהנימוק: משפט אחד, עד 10 מילים.\"\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": {{ JSON.stringify($json.query.text) }}\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\",\n    \"responseSchema\": {\n      \"type\": \"OBJECT\",\n      \"properties\": {\n        \"category\": {\n          \"type\": \"STRING\",\n          \"enum\": [\"משלוח\", \"החזרה\", \"תשלום\", \"תקלה במוצר\", \"שאלה מקדימה\"]\n        },\n        \"urgency\": {\n          \"type\": \"STRING\",\n          \"enum\": [\"גבוהה\", \"רגילה\", \"נמוכה\"]\n        },\n        \"reason\": {\n          \"type\": \"STRING\"\n        }\n      },\n      \"required\": [\"category\", \"urgency\", \"reason\"]\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "2fe904cd-3258-4e6c-b25f-e00bd121b474",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OAhMDy5BjWLJdCFN",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c8dce8bb-4845-4592-90a9-c1999c6153f7",
+              "name": "קטגוריה",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).category }}",
+              "type": "string"
+            },
+            {
+              "id": "0af00e06-e276-4d9f-b844-09586114a4bc",
+              "name": "דחיפות",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).urgency }}",
+              "type": "string"
+            },
+            {
+              "id": "93e26b66-620e-4835-bfb0-a5708b58bd36",
+              "name": "נימוק",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).reason }}",
+              "type": "string"
+            },
+            {
+              "id": "25cc9922-e22a-4b4d-9984-97e30c504411",
+              "name": "פנייה",
+              "value": "={{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "33931c16-5057-4615-be5f-c2e425875615",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "path": "classify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "21a51d5f-cfa8-4ff5-a455-3919912a9ce3",
+      "name": "Webhook",
+      "webhookId": "38ef94cd-a796-45a1-ac45-7fe84d42db50"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        912,
+        0
+      ],
+      "id": "d77ca62f-4a5e-421e-b8ef-beffa64f7c06",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 122261553,
+          "mode": "list",
+          "cachedResultName": "פלט שיעור 6",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=122261553"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "קטגוריה": "={{ $json['קטגוריה'] }}",
+            "דחיפות": "={{ $json['דחיפות'] }}",
+            "נימוק": "={{ $json['נימוק'] }}",
+            "פנייה": "={{ $('Webhook').item.json.query.text }}"
+          },
+          "matchingColumns": [
+            "פנייה"
+          ],
+          "schema": [
+            {
+              "id": "פנייה",
+              "displayName": "פנייה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "קטגוריה",
+              "displayName": "קטגוריה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "דחיפות",
+              "displayName": "דחיפות",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "נימוק",
+              "displayName": "נימוק",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        912,
+        144
+      ],
+      "id": "89daa7e9-a415-4571-b8f2-e80a726a1dd9",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e9b2c862-1830-40e4-ac10-f076339751fb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "pN2NUBhrBbFJC7Dc",
+  "tags": []
+}

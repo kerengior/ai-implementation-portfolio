@@ -1,0 +1,142 @@
+{
+  "name": "error workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8de46822-7e24-4f2f-a90c-792445cd493d",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU",
+          "mode": "list",
+          "cachedResultName": "יומן בדיקה - שיעור 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 598905490,
+          "mode": "list",
+          "cachedResultName": "שגיאות",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iOnYQgFRMRnaIFZwlB1RgDYF18Sil0etKZseGNuRGiU/edit#gid=598905490"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "זמן": "={{ $now.setZone('Asia/Jerusalem').toFormat('dd.MM.yyyy HH:mm:ss') }}",
+            "זרימה": "={{ $json.workflow.name }}",
+            "הודעה": "= {{ $json.execution.error.message }}",
+            "צומת": "={{ $json.execution.lastNodeExecuted }}",
+            "קישור": "= {{ $json.execution.url }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "זמן",
+              "displayName": "זמן",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "זרימה",
+              "displayName": "זרימה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "הודעה",
+              "displayName": "הודעה",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "צומת",
+              "displayName": "צומת",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "קישור",
+              "displayName": "קישור",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "321c3ba3-a2ec-4f60-882e-a96a7f475823",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ca856cfa-52e5-4c6f-a792-21986a06f932",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "3KVKANOTjeL07hxC",
+  "tags": []
+}

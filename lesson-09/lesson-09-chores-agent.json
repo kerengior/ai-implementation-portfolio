@@ -1,0 +1,138 @@
+{
+  "name": "שיעור 9 · סוכן מטלות",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2b249c70-6cd7-45e0-8d36-7a1b22b51f3f",
+      "name": "When chat message received",
+      "webhookId": "874267e7-aa3b-4e0a-b86d-72377a68469b"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        208
+      ],
+      "id": "e5bc01c7-6864-4814-8768-4c42e535c5ea",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fPvxfe5ofXdaST5a",
+          "name": "Google Gemini Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "קורא את כל מטלות הבית של הילדים מהגיליון. כל שורה: מס׳, ילד, מטלה, יום (א׳ עד ה׳), סטטוס (בוצע או לא בוצע). להשתמש בכל שאלה על מטלות, ימים או מה בוצע.",
+        "documentId": {
+          "__rl": true,
+          "value": "1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw",
+          "mode": "list",
+          "cachedResultName": "מטלות בית - שיעור 9",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 666681006,
+          "mode": "list",
+          "cachedResultName": "מטלות",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw/edit#gid=666681006"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        176
+      ],
+      "id": "21724a0f-8930-4bec-8f9b-a3c47b810425",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "אתה עוזר מטלות הבית של המשפחה. אתה עונה לילדים ולהורים על המטלות של השבוע.\nעל כל שאלה על מטלות, ימים או מה בוצע: קודם קרא את הגיליון בעזרת הכלי קריאת מטלות, וענה רק לפי מה שכתוב בו.\nאל תמציא מטלות, ילדים או ימים. אם משהו לא מופיע בגיליון, אמור שאין לך את המידע.\nענה בעברית, בקצרה, בשפה שמתאימה לילדים.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "53eed7e6-7771-4acb-889b-18881df2871d",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c0876cc0-3ea9-45d5-b0b9-f454b9e32cfa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "1Vl4an8igZkMYkw2",
+  "tags": []
+}

@@ -1,0 +1,309 @@
+{
+  "name": "שיעור 12 · סוכן מטלות בצ׳אט",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "authentication": "basicAuth",
+        "initialMessages": "היי! \nאתם יכולם לשאול אותי איזה משימות נשארו לכם או לעדכן אותי מה עשיתם\nאל תשכחו לכתוב לי את השם שלכם (:",
+        "options": {
+          "inputPlaceholder": "כתוב כאן...",
+          "title": "עוזר המטלות"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "78f13405-1721-48d4-ad10-a83d9f5cf3d2",
+      "name": "When chat message received",
+      "webhookId": "13024ac7-bbbd-4de8-9579-fd29743779c5",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "KJmIDIq3c0ZXWu3y",
+          "name": "family chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        240
+      ],
+      "id": "15586791-cef5-4a20-935f-6e76050171b5",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fPvxfe5ofXdaST5a",
+          "name": "Google Gemini Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "אתה עוזר מטלות הבית של המשפחה. אתה עונה לילדים ולהורים על המטלות של השבוע.\nעל כל שאלה על מטלות, ימים או מה בוצע: קודם קרא את הגיליון בעזרת הכלי קריאת מטלות, וענה רק לפי מה שכתוב בו.\nאל תמציא מטלות, ילדים או ימים. אם משהו לא מופיע בגיליון, אמור שאין לך את המידע.\nענה בעברית, בקצרה, בשפה שמתאימה לילדים.\nכשמישהו מדווח שמטלה בוצעה:\n1. קרא קודם את הגיליון בעזרת הכלי קריאת מטלות.\n2. מצא את המטלה של אותו ילד שמתאימה לדיווח, גם אם המילים שונות (למשל \"זבל\" ו\"אשפה\").\n3. הפעל את הכלי סימון מטלה כבוצעה עם המס׳ של המטלה הזו בלבד.\n4. אשר בקצרה איזו מטלה סימנת, ולאיזה ילד.\nאם לא ברור מי הילד או איזו מטלה, שאל לפני שאתה מסמן. אל תסמן מטלה של ילד אחר.\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        288,
+        0
+      ],
+      "id": "000413fb-7682-42ae-8c68-503bac515296",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "קורא את כל מטלות הבית של הילדים מהגיליון. כל שורה: מס׳, ילד, מטלה, יום (א׳ עד ה׳), סטטוס (בוצע או לא בוצע). להשתמש בכל שאלה על מטלות, ימים או מה בוצע.",
+        "documentId": {
+          "__rl": true,
+          "value": "1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw",
+          "mode": "list",
+          "cachedResultName": "מטלות בית - שיעור 9",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 666681006,
+          "mode": "list",
+          "cachedResultName": "מטלות",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw/edit#gid=666681006"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        368,
+        240
+      ],
+      "id": "04dcf272-0625-4e93-a18f-304bf9e81827",
+      "name": "read_tasks",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "מסמן מטלה אחת כבוצעה בגיליון, לפי המס׳ שלה. משתמשים בו רק אחרי שקראת את הגיליון בכלי קריאת מטלות ומצאת את המס׳ של המטלה הנכונה, של הילד הנכון. הכלי משנה את הסטטוס ל\"בוצע\" וכותב את התאריך של היום.",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw",
+          "mode": "list",
+          "cachedResultName": "מטלות בית - שיעור 9",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 666681006,
+          "mode": "list",
+          "cachedResultName": "מטלות",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jSY8v00ufzBr21LTAgp0UWZcR9ObMs_jXgEXx5wByiw/edit#gid=666681006"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "בוצע",
+            "done_date": "={{ $now.toFormat('d.M.yyyy') }}",
+            "task_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('task_id__using_to_match_', `מספר המטלה שהילד סיים, מעמודת task_id בתוצאה של read_tasks`, 'string') }}"
+          },
+          "matchingColumns": [
+            "task_id"
+          ],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "child",
+              "displayName": "child",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "task",
+              "displayName": "task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "day",
+              "displayName": "day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "done_date",
+              "displayName": "done_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        496,
+        240
+      ],
+      "id": "b7436710-2a26-4f22-b3ba-de338f39c996",
+      "name": "mark_task_done",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        144
+      ],
+      "id": "18d73f09-ca0d-41f3-9586-d32697a9846c",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read_tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark_task_done": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "3KVKANOTjeL07hxC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "98a0f385-699b-4936-8809-cd97a2ae6892",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "zrLqC9RiGWA5wdYS",
+  "tags": []
+}

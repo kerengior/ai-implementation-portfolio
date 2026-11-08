@@ -101,7 +101,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Update row in sheet in Google Sheetsmark_task_done: מסמן מטלה אחת כבוצעה בגיליון לפי ה-task_id שלה, וכותב את done_date. משתמשים בו רק אחרי שקראת את הגיליון עם read_tasks ומצאת את ה-task_id של המטלה הנכונה, של הילד הנכון.",
+        "toolDescription": "מסמן מטלה כבוצעה\n בגיליון לפי ה-task_id שלה, וכותב את done_date. משתמשים בו רק אחרי שקראת את הגיליון עם read_tasks ומצאת את ה-task_id של המטלה הנכונה, של הילד הנכון.",
         "operation": "update",
         "documentId": {
           "__rl": true,
@@ -248,9 +248,9 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "time": "=time: {{ $now.toFormat('d.M.yyyy HH:mm') }}",
-            "message": "=message: {{ $('When chat message received').item.json.chatInput }}",
-            "error": "=error: {{ JSON.stringify($json).slice(0, 300) }}"
+            "time": "={{ $now.toFormat('d.M.yyyy HH:mm') }}",
+            "message": "={{ $('When chat message received').item.json.chatInput }}",
+            "error": "={{ JSON.stringify($json).slice(0, 300) }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -414,9 +414,11 @@
     "timeSavedMode": "fixed",
     "errorWorkflow": "3KVKANOTjeL07hxC",
     "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "timezone": "Asia/Jerusalem",
+    "executionTimeout": -1
   },
-  "versionId": "8053391c-d18c-40e4-97ff-4f6ad0e58d1d",
+  "versionId": "50f4e96d-0f4c-421a-996b-de2f229ee0eb",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"

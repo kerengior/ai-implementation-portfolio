@@ -1,0 +1,364 @@
+{
+  "name": "lesson-16-house-docs-rag-citations",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b4f5368a-945b-407f-8beb-118ab5e7e888",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "YOUR_DRIVE_FOLDER_ID",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2aba085b-dbd3-412b-a74b-c98a4a4d9094",
+      "name": "Search files",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QidxHpZvxMTayGmU",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "87c2c784-d1aa-437d-b808-3943a3d7f147",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QidxHpZvxMTayGmU",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "keepSource": "json"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "9084306d-2964-4b81-b2f3-87019e3c4d18",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "house_docs",
+          "mode": "list"
+        },
+        "clearStore": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        896,
+        0
+      ],
+      "id": "5af52c13-065e-4245-b948-804de1b0ee34",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source",
+                "value": "={{ $json.name }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        160
+      ],
+      "id": "d2ebf4a4-afbe-4955-b49c-f92f3de01c56",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        832,
+        160
+      ],
+      "id": "4ac9c4b3-9a5b-4c52-87b9-08157ec0e0d8",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fPvxfe5ofXdaST5a",
+          "name": "Google Gemini Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        176,
+        256
+      ],
+      "id": "aa439ded-3da5-4df7-93e7-8705801a2b8d",
+      "name": "When chat message received",
+      "webhookId": "6d14165e-bf57-499f-8bc3-b01141c7b091"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "את/ה עונה על שאלות על הצעות מחיר של בניית הבית.\nלכל שאלה, קודם קרא/י לכלי house_docs.\nענה/י רק לפי הקטעים שהכלי החזיר. אם התשובה לא נמצאת בהם, כתוב/י: \"המידע לא מופיע במסמכים\".\nאם שני מסמכים עונים על השאלה, הבא/י את שתי התשובות.\nענה/י בעברית, בקצרה.\nבסוף כל תשובה הוסף בדיוק את שתי השורות הבאות:\nמקור: <שם הקובץ מה-metadata>\nציטוט: \"<עד 15 מילים, מועתקות מילה במילה מהקטע שנשלף>\"\nאם התשובה נשענת על כמה מסמכים, חזור על שתי השורות לכל מסמך.\nאם לא נמצא קטע רלוונטי, כתוב \"לא נמצא במסמכים\" בלי מקור ובלי ציטוט.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        256
+      ],
+      "id": "d602162e-abd3-44d5-85cb-c7fd2d3d2bcf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        432
+      ],
+      "id": "34cf17a5-dd4f-4544-b6e9-4d52dd762062",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        592,
+        560
+      ],
+      "id": "8064a5eb-9364-42e2-a911-5e7e8da6070c",
+      "name": "Embeddings Google Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fPvxfe5ofXdaST5a",
+          "name": "Google Gemini Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "חיפוש בהצעות מחיר של בניית הבית: פרגולות ומסתורי אלומיניום, וספי חלון משני ספקים (ספק ספים א׳ וספק ספים ב׳). מחזיר את הקטעים הכי רלוונטיים לשאלה, עם שם הקובץ שממנו הם הגיעו.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "house_docs",
+          "mode": "list",
+          "cachedResultName": "house_docs"
+        },
+        "topK": 2,
+        "useReranker": "={{ false }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        432
+      ],
+      "id": "469493ec-132f-4da4-8f0d-c6a85376fdab",
+      "name": "house_docs"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "house_docs",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "house_docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "3KVKANOTjeL07hxC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "9ddddf01-a8b5-4e04-9600-883f72fc9795",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2411eedfc633bd9e23a495346002588541c80dee41e9bee5a8060f4c51783342"
+  },
+  "nodeGroups": [],
+  "id": "1MpcMJNcrk0neWMY",
+  "tags": []
+}

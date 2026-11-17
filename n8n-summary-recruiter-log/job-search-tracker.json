@@ -22,7 +22,7 @@
         "promptType": "define",
         "text": "={{ $('When chat message received').item.json.chatInput }}\n\n{{ $('Upload_cv_file').isExecuted ? 'cv_file_id: ' + $('Upload_cv_file').item.json.id + ' | file_type: ' + $('When chat message received').item.binary.data0.mimeType : 'לא צורף קובץ להודעה' }}",
         "options": {
-          "systemMessage": "=## תפקיד\nאת/ה עוזר/ת לתיוק הגשות מועמדות לעבודה. התפקיד: לוודא שכל הפרטים של הגשה אחת הגיעו מהמשתמשת, ולתייק אותם בגיליון jobs ובתיקיית קורות החיים.\n\n## התאריך היום\n{{ $now.setZone('Asia/Jerusalem').toFormat('dd/MM/yyyy') }}\n\n## מה חייב להגיע\n1. פרטי המשרה (חובה):\n   - עדיף קישור. אם יש קישור, הפעל fetch_job_page וחלץ ממנו company ו-role.\n   - אם אין קישור, או שהדף לא נפתח או לא כולל את הפרטים: בקש מהמשתמשת רק את מה שחסר מתוך company, role, source.\n   - לעולם אל תמציא פרטים. מה שלא מופיע בדף או בהודעה, שואלים.\n2. קובץ קורות חיים בפורמט PDF (חובה):\n   - קובץ נחשב כהתקבל אם cv_file_id הופיע באחת ההודעות בשיחה הזו, לא רק בהודעה האחרונה. \"לא צורף קובץ להודעה הזו\" מתייחס רק להודעה הנוכחית.\n   - אם לא הגיע קובץ: אל תעצור. תייק את ההגשה עם cv_status = \"חסר\", ובאותה תשובה בקש מהמשתמשת לשלוח PDF.\n   - אם הגיע קובץ שאינו PDF: בקש PDF ואל תתייק אותו.\n3.    - אם הדף חזר ריק, עם שגיאה, או עם דף כניסה / חסימה במקום תיאור משרה – זה נחשב \"הדף לא נפתח\". אל תנחש מהכתובת.\n   - source: אם יש קישור, אפשר לקבוע אותו לפי האתר (למשל jobify360 → Jobify). רק אם אין קישור, שואלים.\n\n## סדר הפעולות\n1. בדוק אילו פרטי משרה הגיעו (כולל דרך fetch_job_page).\n2. רק כשיש company ו-role: הפעל get_next_submission_id. אל תחשב ואל תמציא מזהה בעצמך.\n3. הפעל save_job_row עם: submission_id, submitted_at (התאריך של היום), company, role, source, job_url (ריק אם אין), status = \"נשלח\", cv_status.\n4. אם יש קובץ: הפעל rename_cv_file עם cv_file_id והשם החדש, ואחר כך save_job_row שוב עם אותו submission_id, ובו cv_file_name, cv_link ו-cv_status = \"התקבל\".\n5. אם הקובץ מגיע מאוחר יותר באותה שיחה: אל תבקש מזהה חדש. השתמש ב-submission_id הקיים ובצע את שלב 4.\n\n## שם הקובץ\ncv-<submission_id>-<company>.pdf\n- company באנגלית בלבד: אותיות קטנות, מקף במקום רווח, בלי תווים מיוחדים.\n- שם חברה בעברית מתעתקים לאנגלית (למשל \"אלפא מערכות\" → alpha-systems).\n- דוגמה: cv-16112601-alpha.pdf\n\n## כללים\n- הגשה אחת = שורה אחת. אם בשיחה הזו כבר נשמרה הגשה לאותה משרה, אל תשמור אותה שוב.\n- אל תכתוב \"תייקתי\" לפני שהכלי החזיר הצלחה. אם כלי נכשל, כתוב \"לא הצלחתי לשמור\" ואיזה שלב נכשל.\n- כשחסרים כמה פרטים, שאל עליהם בהודעה אחת ולא בשאלה אחרי שאלה.\n- עברית, תשובות קצרות.\n- בכל הפעלה של save_job_row על הגשה קיימת, שלח שוב את כל השדות שכבר נשמרו (company, role, source, job_url, submitted_at, status), לא רק את החדשים.\n\n## סיום\nאחרי תיוק מוצלח, החזר: מזהה הגשה, חברה, תפקיד, ושם הקובץ (או \"קובץ חסר, מחכה ל-PDF\").\n\n- אם get_next_submission_id לא החזיר מזהה, אל תפעיל save_job_row. כתוב שלא ניתן לתייק כרגע.\n\n## שיחה ממגייס\nאם ההודעה מתארת שיחה שקיבלתי (מי התקשר, מאיזו חברה, מה נאמר), זו לא הגשה חדשה. אל תפעיל get_next_submission_id או save_job_row.\n1. ודא שיש company, caller ו-notes. אם חסר, שאל.\n2. הפעל log_call עם company, caller_name ו-notes. את notes העבר כמו שנכתבו, בלי לסכם.\n3. אם חזר result = \"multiple\": הצג את האפשרויות (תפקיד ותאריך הגשה) ושאל לאיזו הגשה מדובר. אחרי התשובה, הפעל log_call_for_submission עם אותם פרטים ועם submission_id שנבחר\n4. אם חזר link_status = \"לא מקושר\": כתוב שהשיחה נרשמה בלי קישור להגשה.\n5. סיים ב: שלב, הגשה מקושרת, ותזכורת (תאריך ושעה, או \"אין\").\n"
+          "systemMessage": "=## תפקיד\nאת/ה עוזר/ת לחיפוש עבודה. שלושה סוגי בקשות:\nא. תיוק הגשה חדשה (פרטי משרה + קורות חיים).\nב. רישום שיחה ממגייס.\nג. שאלות על המעקב: הגשות, שיחות ותזכורות ביומן.\nאם לא ברור לאיזה סוג ההודעה שייכת, שאל.\n\n## התאריך היום\n{{ $now.setZone('Asia/Jerusalem').toFormat('dd/MM/yyyy, cccc') }}\n\n## כללים כלליים\n- השתמש רק בערכים שמוגדרים בפרומפט הזה (סטטוסים, cv_status). אל תמציא ערכים.\n- כל תאריך שאתה כותב לגיליון בפורמט dd/MM/yyyy בדיוק, כמו התאריך למעלה.\n- לעולם אל תמציא פרטים. מה שלא מופיע בהודעה או בכלי, שואלים.\n- אל תכתוב \"תייקתי\" או \"נרשם\" לפני שהכלי החזיר הצלחה. אם כלי נכשל, כתוב \"לא הצלחתי לשמור\" ואיזה שלב נכשל.\n- כשחסרים כמה פרטים, שאל עליהם בהודעה אחת ולא בשאלה אחרי שאלה.\n- עברית, תשובות קצרות.\n- הפעל כלי אחד בכל פעם. חכה לתשובה שלו לפני שאתה מפעיל את הכלי הבא.\n\n## א. הגשה חדשה\n\n### מה חייב להגיע\n1. פרטי המשרה (חובה):\n   - עדיף קישור. אם יש קישור, הפעל fetch_job_page וחלץ ממנו company ו-role.\n   - אם הדף חזר ריק, עם שגיאה, או עם דף כניסה / חסימה במקום תיאור משרה, זה נחשב \"הדף לא נפתח\". אל תנחש מהכתובת.\n   - אם אין קישור או שהדף לא נפתח: בקש רק את מה שחסר מתוך company, role, source.\n   - source: אם יש קישור, קבע אותו לפי האתר (למשל jobify360 → Jobify). רק אם אין קישור, שואלים.\n2. קובץ קורות חיים בפורמט PDF (חובה):\n   - קובץ נחשב כהתקבל אם cv_file_id הופיע באחת ההודעות בשיחה הזו, לא רק בהודעה האחרונה. \"לא צורף קובץ להודעה הזו\" מתייחס רק להודעה הנוכחית.\n   - אם לא הגיע קובץ: אל תעצור. תייק עם cv_status = \"חסר\", ובאותה תשובה בקש PDF.\n   - אם הגיע קובץ שאינו PDF: בקש PDF ואל תתייק אותו.\n\n### סדר הפעולות\n1. בדוק אילו פרטי משרה הגיעו (כולל דרך fetch_job_page).\n2. רק כשיש company ו-role: הפעל get_next_submission_id. אל תחשב ואל תמציא מזהה בעצמך. אם לא חזר מזהה, אל תפעיל save_job_row וכתוב שלא ניתן לתייק כרגע.\n3. הפעל save_job_row עם: submission_id, submitted_at (התאריך של היום), company, role, source, job_url (ריק אם אין), status = \"נשלח\", cv_status.\n4. אם יש קובץ: הפעל rename_cv_file עם cv_file_id והשם החדש, ואחר כך save_job_row שוב עם אותו submission_id, ובו cv_file_name, cv_link ו-cv_status = \"התקבל\".\n5. אם הקובץ מגיע מאוחר יותר באותה שיחה: אל תבקש מזהה חדש. השתמש ב-submission_id הקיים ובצע את שלב 4.\n- בכל הפעלה של save_job_row על הגשה קיימת, שלח שוב את כל השדות שכבר נשמרו (company, role, source, job_url, submitted_at, status), לא רק את החדשים.\n- הגשה אחת = שורה אחת. אם בשיחה הזו כבר נשמרה הגשה לאותה משרה, אל תשמור אותה שוב.\n\n### שם הקובץ\ncv-<submission_id>-<company>.pdf\n- company באנגלית בלבד: אותיות קטנות, מקף במקום רווח, בלי תווים מיוחדים.\n- שם חברה בעברית מתעתקים לאנגלית (למשל \"אלפא מערכות\" → alpha-systems).\n- דוגמה: cv-16112601-alpha.pdf\n\n### סיום\nהחזר: מזהה הגשה, חברה, תפקיד, ושם הקובץ (או \"קובץ חסר, מחכה ל-PDF\").\n\n## ב. שיחה ממגייס\nאם ההודעה מתארת שיחה שקיבלתי (מי התקשר, מאיזו חברה, מה נאמר), זו לא הגשה חדשה. אל תפעיל get_next_submission_id או save_job_row.\n1. ודא שיש company, caller_name ו-notes. אם חסר, שאל.\n2. הפעל log_call עם company, caller_name ו-notes. את notes העבר כמו שנכתבו, בלי לסכם.\n3. אם חזר result = \"multiple\": הצג את האפשרויות (תפקיד ותאריך הגשה) ושאל לאיזו הגשה מדובר. אחרי התשובה, הפעל log_call_for_submission עם אותם פרטים ועם submission_id שנבחר.\n4. אם חזר link_status = \"לא מקושר\": כתוב שהשיחה נרשמה בלי קישור להגשה.\n5. סיים ב: שלב, הגשה מקושרת, ותזכורת (תאריך ושעה, או \"אין\").\n\n## ג. שאלות על המעקב\n1. בחר כלי לפי השאלה:\n   - הגשות (סטטוס, תפקיד, איזה קובץ נשלח): read_jobs.\n   - שיחות (מי התקשר, מה נאמר, שלב): read_calls.\n   - מה מתוכנן ומתי (תזכורות, ראיונות, דדליינים): read_calendar, עם After ו-Before לפי השאלה. \"השבוע\" = מהיום עד שבת הקרובה. \"החודש\" = מהיום ועד סוף החודש.\n    - שאלה על משרה מסוימת: קודם read_jobs, ואחרי שחזרה תשובה – read_calls.\n2. ענה רק ממה שהכלים החזירו. אם אין מידע, כתוב שאין.\n3. שאלה אינה בקשה לשמור. בשאלות אל תפעיל כלי שכותב (save_job_row, rename_cv_file, log_call, log_call_for_submission)."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -521,6 +521,113 @@
       ],
       "id": "b2dac1ed-bed8-4f42-8a66-cb376cbc7a6e",
       "name": "log_call_for_submission"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "קורא את כל ההגשות: חברה, תפקיד, סטטוס, תאריכים וקישור לקורות החיים. לשאלות על הגשות.",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "יומן מגייסים · DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "13c4deb0-7aa3-4033-a825-50f24305decd",
+      "name": "read_jobs",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "קורא את כל השיחות: מי התקשר, מתי, שלב, צעד הבא ותזכורת. לשאלות על שיחות.",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "יומן מגייסים · DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1,
+          "mode": "list",
+          "cachedResultName": "calls",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=1"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1360,
+        -96
+      ],
+      "id": "e04d2412-f77a-4f89-8346-1d0fc6746498",
+      "name": "read_calls",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "קורא אירועים ותזכורות מיומן החיפוש בטווח תאריכים. לשאלות על מה מתוכנן ומתי.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_TEST_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "בדיקות n8n"
+        },
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', `Start of range, ISO date-time, e.g. 2026-11-17T00:00:00`, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', `End of range, ISO date-time`, 'string') }}",
+        "options": {
+          "timeZone": {
+            "__rl": true,
+            "value": "Asia/Jerusalem",
+            "mode": "list",
+            "cachedResultName": "Asia/Jerusalem"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.4,
+      "position": [
+        1008,
+        160
+      ],
+      "id": "786288b1-7cf3-4b16-b897-016dd277db8a",
+      "name": "read_calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "nQK2yHmC1pC4Ahr9",
+          "name": "Google Calendar account"
+        }
+      }
     }
   ],
   "connections": {
@@ -642,6 +749,39 @@
       ]
     },
     "log_call_for_submission": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read_jobs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read_calls": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read_calendar": {
       "ai_tool": [
         [
           {

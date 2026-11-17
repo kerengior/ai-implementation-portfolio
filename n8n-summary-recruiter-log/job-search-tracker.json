@@ -1,0 +1,667 @@
+{
+  "name": "job search tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "allowFileUploads": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -336,
+        0
+      ],
+      "id": "c139e869-a998-41c7-922e-cb913e501407",
+      "name": "When chat message received",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}\n\n{{ $('Upload_cv_file').isExecuted ? 'cv_file_id: ' + $('Upload_cv_file').item.json.id + ' | file_type: ' + $('When chat message received').item.binary.data0.mimeType : 'לא צורף קובץ להודעה' }}",
+        "options": {
+          "systemMessage": "=## תפקיד\nאת/ה עוזר/ת לתיוק הגשות מועמדות לעבודה. התפקיד: לוודא שכל הפרטים של הגשה אחת הגיעו מהמשתמשת, ולתייק אותם בגיליון jobs ובתיקיית קורות החיים.\n\n## התאריך היום\n{{ $now.setZone('Asia/Jerusalem').toFormat('dd/MM/yyyy') }}\n\n## מה חייב להגיע\n1. פרטי המשרה (חובה):\n   - עדיף קישור. אם יש קישור, הפעל fetch_job_page וחלץ ממנו company ו-role.\n   - אם אין קישור, או שהדף לא נפתח או לא כולל את הפרטים: בקש מהמשתמשת רק את מה שחסר מתוך company, role, source.\n   - לעולם אל תמציא פרטים. מה שלא מופיע בדף או בהודעה, שואלים.\n2. קובץ קורות חיים בפורמט PDF (חובה):\n   - קובץ נחשב כהתקבל אם cv_file_id הופיע באחת ההודעות בשיחה הזו, לא רק בהודעה האחרונה. \"לא צורף קובץ להודעה הזו\" מתייחס רק להודעה הנוכחית.\n   - אם לא הגיע קובץ: אל תעצור. תייק את ההגשה עם cv_status = \"חסר\", ובאותה תשובה בקש מהמשתמשת לשלוח PDF.\n   - אם הגיע קובץ שאינו PDF: בקש PDF ואל תתייק אותו.\n3.    - אם הדף חזר ריק, עם שגיאה, או עם דף כניסה / חסימה במקום תיאור משרה – זה נחשב \"הדף לא נפתח\". אל תנחש מהכתובת.\n   - source: אם יש קישור, אפשר לקבוע אותו לפי האתר (למשל jobify360 → Jobify). רק אם אין קישור, שואלים.\n\n## סדר הפעולות\n1. בדוק אילו פרטי משרה הגיעו (כולל דרך fetch_job_page).\n2. רק כשיש company ו-role: הפעל get_next_submission_id. אל תחשב ואל תמציא מזהה בעצמך.\n3. הפעל save_job_row עם: submission_id, submitted_at (התאריך של היום), company, role, source, job_url (ריק אם אין), status = \"נשלח\", cv_status.\n4. אם יש קובץ: הפעל rename_cv_file עם cv_file_id והשם החדש, ואחר כך save_job_row שוב עם אותו submission_id, ובו cv_file_name, cv_link ו-cv_status = \"התקבל\".\n5. אם הקובץ מגיע מאוחר יותר באותה שיחה: אל תבקש מזהה חדש. השתמש ב-submission_id הקיים ובצע את שלב 4.\n\n## שם הקובץ\ncv-<submission_id>-<company>.pdf\n- company באנגלית בלבד: אותיות קטנות, מקף במקום רווח, בלי תווים מיוחדים.\n- שם חברה בעברית מתעתקים לאנגלית (למשל \"אלפא מערכות\" → alpha-systems).\n- דוגמה: cv-16112601-alpha.pdf\n\n## כללים\n- הגשה אחת = שורה אחת. אם בשיחה הזו כבר נשמרה הגשה לאותה משרה, אל תשמור אותה שוב.\n- אל תכתוב \"תייקתי\" לפני שהכלי החזיר הצלחה. אם כלי נכשל, כתוב \"לא הצלחתי לשמור\" ואיזה שלב נכשל.\n- כשחסרים כמה פרטים, שאל עליהם בהודעה אחת ולא בשאלה אחרי שאלה.\n- עברית, תשובות קצרות.\n- בכל הפעלה של save_job_row על הגשה קיימת, שלח שוב את כל השדות שכבר נשמרו (company, role, source, job_url, submitted_at, status), לא רק את החדשים.\n\n## סיום\nאחרי תיוק מוצלח, החזר: מזהה הגשה, חברה, תפקיד, ושם הקובץ (או \"קובץ חסר, מחכה ל-PDF\").\n\n- אם get_next_submission_id לא החזיר מזהה, אל תפעיל save_job_row. כתוב שלא ניתן לתייק כרגע.\n\n## שיחה ממגייס\nאם ההודעה מתארת שיחה שקיבלתי (מי התקשר, מאיזו חברה, מה נאמר), זו לא הגשה חדשה. אל תפעיל get_next_submission_id או save_job_row.\n1. ודא שיש company, caller ו-notes. אם חסר, שאל.\n2. הפעל log_call עם company, caller_name ו-notes. את notes העבר כמו שנכתבו, בלי לסכם.\n3. אם חזר result = \"multiple\": הצג את האפשרויות (תפקיד ותאריך הגשה) ושאל לאיזו הגשה מדובר. אחרי התשובה, הפעל log_call_for_submission עם אותם פרטים ועם submission_id שנבחר\n4. אם חזר link_status = \"לא מקושר\": כתוב שהשיחה נרשמה בלי קישור להגשה.\n5. סיים ב: שלב, הגשה מקושרת, ותזכורת (תאריך ושעה, או \"אין\").\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        656,
+        0
+      ],
+      "id": "c3dc3054-e139-4831-a28f-8f938c513629",
+      "name": "AI Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "data0",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_CV_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "2 · קורות חיים שנשלחו (הזרימה מעלה לכאן)",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/YOUR_CV_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        112,
+        -80
+      ],
+      "id": "3a853553-55ae-4dd0-82e9-c6e8d83b7baf",
+      "name": "Upload_cv_file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QidxHpZvxMTayGmU",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "d7472da5-0140-4cb9-ba0a-b0c5bf7a5118",
+              "leftValue": "={{ Object.keys($binary || {}).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -112,
+        0
+      ],
+      "id": "5528392c-a798-4192-bf44-9bca9bc3feae",
+      "name": "file check",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        128
+      ],
+      "id": "f5142816-22a9-4b05-9348-cdffd518099a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        336,
+        272
+      ],
+      "id": "01d7ba5a-1aa7-4e25-bb0f-6a4a2e5debbc",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "יומן מגייסים · DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "submitted_at": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('submitted_at', `תאריך הגשת המשרה, אם לא צוין תאריך אז יש לשאול את המשתמש אם זה היום או שהוגש לפני כן ולשים את התאריך המתאים`, 'string') }}",
+            "company": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('company', ``, 'string') }}",
+            "role": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('role', ``, 'string') }}",
+            "source": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('source', ``, 'string') }}",
+            "job_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('job_url', ``, 'string') }}",
+            "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', ``, 'string') }}",
+            "last_update": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('last_update', `היום שבו נשלחה ההודעה בתבנית תאריך dd/mm/yy`, 'string') }}",
+            "cv_status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('cv_status', ``, 'string') }}",
+            "submission_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('submission_id', ``, 'string') }}",
+            "cv_file_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('cv_file_name', ``, 'string') }}",
+            "cv_link": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('cv_link', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "submission_id"
+          ],
+          "schema": [
+            {
+              "id": "submission_id",
+              "displayName": "submission_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "submitted_at",
+              "displayName": "submitted_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_url",
+              "displayName": "job_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_file_name",
+              "displayName": "cv_file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cv_link",
+              "displayName": "cv_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_update",
+              "displayName": "last_update",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_status",
+              "displayName": "cv_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        608,
+        224
+      ],
+      "id": "5c37f6b3-6472-4fe3-8de4-afcea1f8e2a0",
+      "name": "save_job_row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "מחזיר את מזהה ההגשה הבא. להפעיל פעם אחת לכל הגשה חדשה, רק אחרי שיש company ו-role.",
+        "workflowId": {
+          "__rl": true,
+          "value": "6actD7P6uRdZrsiP",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/6actD7P6uRdZrsiP",
+          "cachedResultName": "get_next_submission_id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        320
+      ],
+      "id": "0b360bda-e1bb-42ca-aaa7-892e0b002be6",
+      "name": "get_next_submission_id"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "משנה את שם קובץ קורות החיים בדרייב. מקבל את cv_file_id ואת השם החדש.",
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('File_to_Update', ``, 'string') }}",
+          "mode": "id"
+        },
+        "newUpdatedFileName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('New_Updated_File_Name', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTool",
+      "typeVersion": 3,
+      "position": [
+        864,
+        224
+      ],
+      "id": "f8f2b094-589d-4b4a-b5cd-1bf35afe7c1b",
+      "name": "rename_cv_file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QidxHpZvxMTayGmU",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "פותח קישור למשרה ומחזיר את הטקסט של הדף. להפעיל כשהמשתמשת שלחה קישור.",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "options": {},
+        "optimizeResponse": true,
+        "responseType": "html",
+        "onlyContent": true,
+        "truncateResponse": true,
+        "maxLength": 8000
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        992,
+        304
+      ],
+      "id": "58ae4e2b-7773-47ab-aa27-97a2c54f527b",
+      "name": "fetch_job_page"
+    },
+    {
+      "parameters": {
+        "description": "רושם שיחה ממגייס: מקשר להגשה, מעדכן סטטוס ויוצר תזכורת. מחזיר logged או multiple.",
+        "workflowId": {
+          "__rl": true,
+          "value": "CJXbvKwxFgzbJse2",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/CJXbvKwxFgzbJse2",
+          "cachedResultName": "log_call"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('company', ``, 'string') }}",
+            "notes": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('notes', ``, 'string') }}",
+            "submission_id": "none",
+            "caller_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('caller_name', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "caller_name",
+              "displayName": "caller_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "submission_id",
+              "displayName": "submission_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        224
+      ],
+      "id": "a2cea253-19fa-4ae3-b20c-eff454218bbd",
+      "name": "log_call"
+    },
+    {
+      "parameters": {
+        "description": "רושם שיחה להגשה מסוימת. להפעיל רק אחרי ש-log_call החזיר multiple והמשתמשת בחרה הגשה.",
+        "workflowId": {
+          "__rl": true,
+          "value": "CJXbvKwxFgzbJse2",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/CJXbvKwxFgzbJse2",
+          "cachedResultName": "log_call"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('company', ``, 'string') }}",
+            "notes": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('notes', ``, 'string') }}",
+            "submission_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('submission_id', `The submission id the user chose.`, 'string') }}",
+            "caller_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('caller_name', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "caller_name",
+              "displayName": "caller_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "submission_id",
+              "displayName": "submission_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        128
+      ],
+      "id": "b2dac1ed-bed8-4f42-8a66-cb376cbc7a6e",
+      "name": "log_call_for_submission"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "file check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload_cv_file": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "file check": {
+      "main": [
+        [
+          {
+            "node": "Upload_cv_file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_job_row": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_next_submission_id": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rename_cv_file": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch_job_page": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_call": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_call_for_submission": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "3KVKANOTjeL07hxC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

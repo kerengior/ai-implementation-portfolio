@@ -1,0 +1,786 @@
+{
+  "name": "log_call",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "company"
+            },
+            {
+              "name": "caller_name"
+            },
+            {
+              "name": "notes"
+            },
+            {
+              "name": "submission_id"
+            }
+          ]
+        }
+      },
+      "id": "cee6ee70-d9b0-4f97-aae6-7e2a4b428a6a",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_SHEET_ID",
+          "cachedResultName": "יומן מגייסים · DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "jobs"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "id": "079d1692-a242-49d6-8a76-ec4a26e812e8",
+      "name": "Get job rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        128
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('When Executed by Another Workflow').first().json;\nconst company = String(input.company ?? '').trim();\nconst rawId = String(input.submission_id ?? '').trim();\nconst providedId = rawId.toLowerCase() === 'none' ? '' : rawId;\nconst pad = v => String(v ?? '').trim().padStart(8, '0');\nconst rows = $input.all().map(i => i.json).filter(r => r && Object.keys(r).length > 0);\nconst base = { company, caller_name: String(input.caller_name ?? ''), notes: String(input.notes ?? '') };\n\nif (providedId) {\n    if (!rows.some(r => pad(r.submission_id) === pad(providedId))) {\n    return [{ json: { ...base, result: 'single', submission_id: '', link_status: 'לא מקושר', options: [] } }];\n  }\n  return [{ json: { ...base, result: 'single', submission_id: pad(providedId), link_status: 'מקושר', options: [] } }];\n}\n\nconst needle = company.toLowerCase();\nconst found = needle\n  ? rows.filter(r => {\n      const c = String(r.company ?? '').trim().toLowerCase();\n      return c !== '' && (c.includes(needle) || needle.includes(c));\n    })\n  : [];\nconst byId = {};\nfor (const r of found) byId[pad(r.submission_id)] = r;\nconst matches = Object.values(byId);\n\nif (matches.length === 0) {\n  return [{ json: { ...base, result: 'single', submission_id: '', link_status: 'לא מקושר', options: [] } }];\n}\nif (matches.length === 1) {\n  return [{ json: { ...base, result: 'single', submission_id: pad(matches[0].submission_id), link_status: 'מקושר', options: [] } }];\n}\nreturn [{ json: { ...base, result: 'multiple', submission_id: '', link_status: '', options: matches.map(r => ({ submission_id: pad(r.submission_id), role: String(r.role ?? ''), submitted_at: String(r.submitted_at ?? '') })) } }];"
+      },
+      "id": "82472635-44d0-4a44-a1da-230a4d05f135",
+      "name": "Find submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "multiple",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "40f2b2f1-a13f-4e9c-94ab-a4297d824c9f",
+      "name": "Several submissions?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ro_result",
+              "name": "result",
+              "value": "multiple",
+              "type": "string"
+            },
+            {
+              "id": "ro_options",
+              "name": "options",
+              "value": "={{ $json.options }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0f405f88-30c1-4b42-a3f8-5b235a5fbe2a",
+      "name": "Return options",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=היום: {{ $now.setZone('Asia/Jerusalem').toFormat('yyyy-MM-dd, cccc') }} (אזור זמן Asia/Jerusalem)\nחברה: {{ $json.company }}\nמתקשר/ת: {{ $json.caller_name }}\nהערות השיחה:\n{{ $json.notes }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "את/ה מסכם/ת שיחות טלפון ממגייסים על מועמדות לעבודה. החזר JSON בלבד לפי הסכמה.\n- summary: משפט אחד בעברית.\n- stage: אחד מהערכים: שיחת סינון, ראיון, מבחן בית, הצעה, דחייה, אחר.\n- next_step: טקסט קצר בעברית.\n- reminder_date: תאריך בפורמט YYYY-MM-DD. חשב תאריכים יחסיים (\"יום חמישי הבא\", \"סוף השבוע\", \"מחר\") לפי התאריך של היום שמופיע בהודעה. אם ההערות לא מרמזות על תאריך, החזר \"\". לעולם אל תמציא תאריך.\n- reminder_time: שעה בפורמט HH:mm רק אם צוינה שעה, אחרת \"\"."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "8cf17e4b-b3b1-4f78-bcdc-66a01fd88b75",
+      "name": "Structure notes",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        864,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "18a9113c-4d85-45e2-87a3-c30117215b1f",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        432
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fPvxfe5ofXdaST5a",
+          "name": "Google Gemini Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"summary\": {\n      \"type\": \"string\",\n      \"description\": \"משפט אחד בעברית שמסכם את השיחה\"\n    },\n    \"stage\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"שיחת סינון\",\n        \"ראיון\",\n        \"מבחן בית\",\n        \"הצעה\",\n        \"דחייה\",\n        \"אחר\"\n      ]\n    },\n    \"next_step\": {\n      \"type\": \"string\",\n      \"description\": \"הצעד הבא, טקסט קצר בעברית\"\n    },\n    \"reminder_date\": {\n      \"type\": \"string\",\n      \"description\": \"YYYY-MM-DD או מחרוזת ריקה\"\n    },\n    \"reminder_time\": {\n      \"type\": \"string\",\n      \"description\": \"HH:mm או מחרוזת ריקה\"\n    }\n  },\n  \"required\": [\n    \"summary\",\n    \"stage\",\n    \"next_step\",\n    \"reminder_date\",\n    \"reminder_time\"\n  ]\n}"
+      },
+      "id": "8459a681-4c2b-4c90-a536-37883b3b57b1",
+      "name": "Call structure",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1008,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.output.stage }}",
+              "rightValue": "דחייה",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.output.reminder_date }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c47b6d92-053b-4852-bd67-cc18175d88b8",
+      "name": "Needs reminder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_TEST_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "בדיקות n8n"
+        },
+        "start": "={{ DateTime.fromISO($json.output.reminder_date + 'T' + ($json.output.reminder_time || '09:00'), { zone: 'Asia/Jerusalem' }).toISO() }}",
+        "end": "={{ DateTime.fromISO($json.output.reminder_date + 'T' + ($json.output.reminder_time || '09:00'), { zone: 'Asia/Jerusalem' }).plus({ minutes: 30 }).toISO() }}",
+        "additionalFields": {
+          "description": "={{ $json.output.summary }}\nמזהה הגשה: {{ $('Find submission').item.json.submission_id || 'לא מקושר' }}",
+          "summary": "={{ $('Find submission').item.json.company }} · {{ $json.output.next_step }}"
+        }
+      },
+      "id": "f7097337-7e14-4df9-910e-a7f2c0bc0b7a",
+      "name": "Create reminder",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.4,
+      "position": [
+        1376,
+        128
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "nQK2yHmC1pC4Ahr9",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_SHEET_ID",
+          "cachedResultName": "יומן מגייסים · DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1",
+          "cachedResultName": "calls"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_id": "={{ $now.setZone('Asia/Jerusalem').toFormat('yyMMddHHmmss') }}",
+            "call_at": "={{ $now.setZone('Asia/Jerusalem').toFormat('dd/MM/yyyy') }}",
+            "company": "={{ $('Find submission').item.json.company }}",
+            "caller": "={{ $('Find submission').item.json.caller_name }}",
+            "notes": "={{ $('Find submission').item.json.notes }}",
+            "submission_id": "={{ $('Find submission').item.json.submission_id }}",
+            "link_status": "={{ $('Find submission').item.json.link_status }}",
+            "summary": "={{ $('Structure notes').item.json.output.summary }}",
+            "stage": "={{ $('Structure notes').item.json.output.stage }}",
+            "next_step": "={{ $('Structure notes').item.json.output.next_step }}",
+            "reminder_date": "={{ $('Structure notes').item.json.output.reminder_date }}",
+            "calendar_event": "={{ $('Create reminder').isExecuted ? $('Create reminder').item.json.htmlLink : '' }}"
+          },
+          "schema": [
+            {
+              "id": "call_id",
+              "displayName": "call_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "call_at",
+              "displayName": "call_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caller",
+              "displayName": "caller",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "submission_id",
+              "displayName": "submission_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_status",
+              "displayName": "link_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "next_step",
+              "displayName": "next_step",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reminder_date",
+              "displayName": "reminder_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "calendar_event",
+              "displayName": "calendar_event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "0baf219c-0a5a-48b8-88a3-065f8296540d",
+      "name": "Write call row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1600,
+        208
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Find submission').item.json.link_status }}",
+              "rightValue": "מקושר",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d3d7e3c0-b034-4f48-8e08-06599a319cc0",
+      "name": "Linked to submission?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_SHEET_ID",
+          "cachedResultName": "יומן מגייסים · DB"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "jobs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "submission_id": "={{ $('Find submission').item.json.submission_id }}",
+            "status": "={{ $('Structure notes').item.json.output.stage }}",
+            "last_update": "={{ $now.setZone('Asia/Jerusalem').toFormat('dd/MM/yyyy') }}"
+          },
+          "matchingColumns": [
+            "submission_id"
+          ],
+          "schema": [
+            {
+              "id": "submission_id",
+              "displayName": "submission_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_update",
+              "displayName": "last_update",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4cc41224-91a2-4091-8907-355d8b9cde4a",
+      "name": "Update job status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1424,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ytRkWKTORQRfSLw6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "rl_result",
+              "name": "result",
+              "value": "logged",
+              "type": "string"
+            },
+            {
+              "id": "rl_sub",
+              "name": "submission_id",
+              "value": "={{ $('Find submission').item.json.submission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "rl_link",
+              "name": "link_status",
+              "value": "={{ $('Find submission').item.json.link_status }}",
+              "type": "string"
+            },
+            {
+              "id": "rl_stage",
+              "name": "stage",
+              "value": "={{ $('Structure notes').item.json.output.stage }}",
+              "type": "string"
+            },
+            {
+              "id": "rl_rem",
+              "name": "reminder",
+              "value": "={{ $('Create reminder').isExecuted ? $('Structure notes').item.json.output.reminder_date + ' ' + ($('Structure notes').item.json.output.reminder_time || '09:00') : 'אין' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "642f38af-9ee7-4121-98d2-2cba0f85b855",
+      "name": "Return logged",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1648,
+        208
+      ],
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get job rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get job rows": {
+      "main": [
+        [
+          {
+            "node": "Find submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find submission": {
+      "main": [
+        [
+          {
+            "node": "Several submissions?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Several submissions?": {
+      "main": [
+        [
+          {
+            "node": "Return options",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Structure notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure notes": {
+      "main": [
+        [
+          {
+            "node": "Needs reminder?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structure notes",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call structure": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Structure notes",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs reminder?": {
+      "main": [
+        [
+          {
+            "node": "Create reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write call row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create reminder": {
+      "main": [
+        [
+          {
+            "node": "Write call row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write call row": {
+      "main": [
+        [
+          {
+            "node": "Linked to submission?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Linked to submission?": {
+      "main": [
+        [
+          {
+            "node": "Update job status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update job status": {
+      "main": [
+        [
+          {
+            "node": "Return logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "3KVKANOTjeL07hxC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "nodeGroups": [
+    {
+      "id": "0ca41dbe-e889-489d-963a-3a832a9655a8",
+      "name": "Find the application",
+      "nodeIds": [
+        "079d1692-a242-49d6-8a76-ec4a26e812e8",
+        "82472635-44d0-4a44-a1da-230a4d05f135"
+      ],
+      "description": "Reads all submissions and matches the caller company to one of them, or uses the id the agent already chose"
+    },
+    {
+      "id": "e7444719-6c8b-4ecf-a7be-f08ef4bad3d1",
+      "name": "Record the call",
+      "nodeIds": [
+        "40f2b2f1-a13f-4e9c-94ab-a4297d824c9f",
+        "0f405f88-30c1-4b42-a3f8-5b235a5fbe2a",
+        "8cf17e4b-b3b1-4f78-bcdc-66a01fd88b75",
+        "18a9113c-4d85-45e2-87a3-c30117215b1f",
+        "8459a681-4c2b-4c90-a536-37883b3b57b1",
+        "c47b6d92-053b-4852-bd67-cc18175d88b8",
+        "f7097337-7e14-4df9-910e-a7f2c0bc0b7a",
+        "0baf219c-0a5a-48b8-88a3-065f8296540d"
+      ],
+      "description": "Several matches go back to the agent unwritten; otherwise AI structures the notes, adds a reminder if needed and logs the call"
+    },
+    {
+      "id": "eb4761ec-c80c-4b3b-a41a-5abc9b437ad8",
+      "name": "Update application status",
+      "nodeIds": [
+        "d3d7e3c0-b034-4f48-8e08-06599a319cc0",
+        "4cc41224-91a2-4091-8907-355d8b9cde4a",
+        "642f38af-9ee7-4121-98d2-2cba0f85b855"
+      ],
+      "description": "For linked calls, sets the job stage and last update date, then replies to the agent with the result"
+    }
+  ],
+  "tags": []
+}
